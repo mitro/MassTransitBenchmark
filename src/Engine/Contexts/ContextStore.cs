@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Engine.Contexts
 {
@@ -19,6 +21,11 @@ namespace Engine.Contexts
             if (!_contexts.TryGetValue(contextId, out context)) throw new Exception($"Context with id={contextId} already exists");
 
             return context;
+        }
+
+        public IEnumerable<Context> All()
+        {
+            return _contexts.Select(c => c.Value);
         }
     }
 }

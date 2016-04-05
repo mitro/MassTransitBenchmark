@@ -18,6 +18,17 @@ namespace Engine.Contexts
 
         public IBus Bus { get; }
 
+        public event Action ContextFinished = delegate { };
+
+        public long ProcessingTimeInMs
+        {
+            get
+            {
+                if (_state != ContextState.SecondRuleExecuted) throw new Exception($"Cannot calculate processing time because context {Id} is still running");
+                return _stopwatch.ElapsedMilliseconds;
+            }
+        }
+
         public Context(IBus bus)
         {
             Id = Interlocked.Increment(ref _currentId);
@@ -45,8 +56,6 @@ namespace Engine.Contexts
 
                 _state = ContextState.FirstRuleExecuted;
 
-                Console.WriteLine($"Context {Id}: First rule executed. Execution took {_stopwatch.ElapsedMilliseconds} ms");
-
                 var executeSecondRule = new ExecuteRule(DateTime.Now, Id, RuleNumber.Second);
                 Bus.Publish(executeSecondRule);
             }
@@ -58,7 +67,7 @@ namespace Engine.Contexts
 
                 _stopwatch.Stop();
 
-                Console.WriteLine($"Context {Id}: Second rule executed. Execution took {_stopwatch.ElapsedMilliseconds} ms");
+                ContextFinished();
             }
         }
     }

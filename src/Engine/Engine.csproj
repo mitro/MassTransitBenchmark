@@ -67,6 +67,7 @@
     <Compile Include="Contexts\Context.cs" />
     <Compile Include="Contexts\ContextStore.cs" />
     <Compile Include="Consumers\RuleExecutedConsumer.cs" />
+    <Compile Include="Metrics\MetricsStore.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
