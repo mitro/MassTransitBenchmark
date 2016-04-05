@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Contracts;
 using Engine.Consumers;
 using Engine.Contexts;
 using Engine.Metrics;
@@ -14,25 +11,28 @@ namespace Engine
 {
     class Program
     {
-        private const int ContextCount = 1000;
+        private static int _contextCount;
 
         private static Stopwatch _stopwatch = new Stopwatch();
 
         static void Main(string[] args)
         {
+            Console.Write("Enter number of contexts to start: ");
+            _contextCount = int.Parse(Console.ReadLine());
+
             var contextStore = new ContextStore();
-            var metricsStore = new MetricsStore(ContextCount);
+            var metricsStore = new MetricsStore(_contextCount);
 
             metricsStore.ExecutionCompleted += () =>
             {
-                Console.Clear();
                 Console.WriteLine($"{metricsStore.FinishedContexts} contexts finished");
-                Console.WriteLine(
-                    $"{(metricsStore.FinishedContexts/_stopwatch.Elapsed.TotalSeconds):0} contexts/sec");
+                Console.WriteLine($"{(metricsStore.FinishedContexts/_stopwatch.Elapsed.TotalSeconds):0} contexts/sec");
+                Console.WriteLine($"{(metricsStore.ProcessedExecuteRule/_stopwatch.Elapsed.TotalSeconds):0} ExecuteRule/sec");
+                Console.WriteLine($"{(metricsStore.ProcessedRuleExecuted/_stopwatch.Elapsed.TotalSeconds):0} RuleExecuted/sec");
                 Console.WriteLine($"{Process.GetCurrentProcess().Threads.Count} threads used now");
                 Console.WriteLine($"Total processing time {_stopwatch.Elapsed}");
 
-                if (metricsStore.FinishedContexts == ContextCount)
+                if (metricsStore.FinishedContexts == _contextCount)
                 {
                     _stopwatch.Stop();
                     Console.WriteLine($"Average context processing time {contextStore.All().Average(c => c.ProcessingTimeInMs)} ms");
@@ -47,8 +47,8 @@ namespace Engine
             {
                 c.ReceiveEndpoint("engine_queue", e =>
                 {
-                    e.Consumer(() => new RuleExecutedConsumer(contextStore));
-                    e.Consumer<ExecuteRuleConsumer>();
+                    e.Consumer(() => new RuleExecutedConsumer(contextStore, metricsStore));
+                    e.Consumer(() => new ExecuteRuleConsumer(metricsStore));
                 });
             });
 
@@ -56,7 +56,7 @@ namespace Engine
 
             _stopwatch.Start();
 
-            for (int i = 0; i < ContextCount; i++)
+            for (int i = 0; i < _contextCount; i++)
             {
                 var context = new Context(bus);
                 contextStore.Add(context);
