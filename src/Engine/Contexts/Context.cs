@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using Contracts;
 using MassTransit;
 
@@ -19,7 +20,7 @@ namespace Engine.Contexts
 
         public Context(IBus bus)
         {
-            Id = _currentId++;
+            Id = Interlocked.Increment(ref _currentId);
             Bus = bus;
 
             _state = ContextState.Start;
