@@ -5,22 +5,13 @@ namespace Engine.Metrics
 {
     public class MetricsStore
     {
-        private readonly int _contextCount;
+        private int _contextCount;
 
         private int _finishedContexts;
-        private int _processedExecuteRule;
-        private int _processedRuleExecuted;
 
         public event Action ExecutionCompleted = delegate { };
 
         public int FinishedContexts => _finishedContexts;
-        public int ProcessedExecuteRule => _processedExecuteRule;
-        public int ProcessedRuleExecuted => _processedRuleExecuted;
-
-        public MetricsStore(int contextCount)
-        {
-            _contextCount = contextCount;
-        }
 
         public void LogContextFinish()
         {
@@ -32,14 +23,10 @@ namespace Engine.Metrics
             }
         }
 
-        public void LogExecuteRuleProcessed()
+        public void Reset(int contextCount)
         {
-            Interlocked.Increment(ref _processedExecuteRule);
-        }
-
-        public void LogRuleExecutedProcessed()
-        {
-            Interlocked.Increment(ref _processedRuleExecuted);
+            _contextCount = contextCount;
+            _finishedContexts = 0;
         }
     }
 }

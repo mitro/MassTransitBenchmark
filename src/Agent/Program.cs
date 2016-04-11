@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Configuration;
 using MassTransit;
 using MassTransit.NLogIntegration.Logging;
 
@@ -19,13 +16,15 @@ namespace Agent
 
         private static IBusControl InitBus()
         {
+            var url = ConfigurationManager.AppSettings["RabbitmqUrl"];
+
             NLogLogger.Use();
 
             ushort threadNum = 1000;
 
             var bus = Bus.Factory.CreateUsingRabbitMq(x =>
             {
-                var host = x.Host(new Uri($"rabbitmq://localhost"), h => { });
+                var host = x.Host(new Uri(url), h => { });
 
                 x.ReceiveEndpoint(host, "Benchmark_Agent", e =>
                 {

@@ -27,5 +27,10 @@ namespace Engine.Contexts
         {
             return _contexts.Select(c => c.Value);
         }
+
+        public void Clear()
+        {
+            _contexts.Clear();
+        }
     }
 }
