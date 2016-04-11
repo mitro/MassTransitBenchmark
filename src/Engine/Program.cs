@@ -77,6 +77,8 @@ namespace Engine
         private static IBusControl InitBus()
         {
             var url = ConfigurationManager.AppSettings["RabbitmqUrl"];
+            var username = ConfigurationManager.AppSettings["Username"];
+            var password = ConfigurationManager.AppSettings["Password"];
 
             NLogLogger.Use();
 
@@ -84,7 +86,11 @@ namespace Engine
 
             var bus = Bus.Factory.CreateUsingRabbitMq(x =>
             {
-                var host = x.Host(new Uri(url), h => { });
+                var host = x.Host(new Uri(url), h =>
+                {
+                    h.Username(username);
+                    h.Password(password);
+                });
 
                 x.ReceiveEndpoint(host, "Benchmark_Engine", e =>
                 {
