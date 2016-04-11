@@ -1,20 +1,12 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Contracts;
-using Engine.Metrics;
 using MassTransit;
 
-namespace Engine.Consumers
+namespace Agent
 {
     public class ExecuteRuleConsumer: IConsumer<ExecuteRule>
     {
-        private readonly MetricsStore _metricsStore;
-
-        public ExecuteRuleConsumer(MetricsStore metricsStore)
-        {
-            _metricsStore = metricsStore;
-        }
 
         public async Task Consume(ConsumeContext<ExecuteRule> context)
         {
@@ -32,8 +24,6 @@ namespace Engine.Consumers
             var ruleExecuted = new RuleExecuted(DateTime.Now, message.ContextId, message.Number);
 
             await context.Publish(ruleExecuted);
-
-            _metricsStore.LogExecuteRuleProcessed();
         }
     }
 }

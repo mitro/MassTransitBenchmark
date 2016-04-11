@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Contracts;
 using Engine.Contexts;
 using Engine.Metrics;
@@ -19,9 +20,11 @@ namespace Engine.Consumers
 
         public Task Consume(ConsumeContext<RuleExecuted> context)
         {
-            var ctxId = context.Message.ContextId;
+            var message = context.Message;
+
+            var ctxId = message.ContextId;
             var ctx = _contextStore.Get(ctxId);
-            ctx.Process(context.Message);
+            ctx.Process(message);
 
             _metricsStore.LogRuleExecutedProcessed();
 

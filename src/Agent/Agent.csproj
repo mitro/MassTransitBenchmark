@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3608AB3B-AA49-492C-9C95-ADDB2CF2DABA}</ProjectGuid>
+    <ProjectGuid>{8ED3311A-27C0-4E05-85D6-E27610BAE473}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Engine</RootNamespace>
-    <AssemblyName>Engine</AssemblyName>
+    <RootNamespace>Agent</RootNamespace>
+    <AssemblyName>Agent</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -85,10 +85,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Contexts\Context.cs" />
-    <Compile Include="Contexts\ContextStore.cs" />
-    <Compile Include="Consumers\RuleExecutedConsumer.cs" />
-    <Compile Include="Metrics\MetricsStore.cs" />
+    <Compile Include="ExecuteRuleConsumer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -18,7 +18,7 @@ namespace Engine.Contexts
         {
             Context context;
 
-            if (!_contexts.TryGetValue(contextId, out context)) throw new Exception($"Context with id={contextId} already exists");
+            if (!_contexts.TryGetValue(contextId, out context)) throw new Exception($"Context with id={contextId} does not exist");
 
             return context;
         }
