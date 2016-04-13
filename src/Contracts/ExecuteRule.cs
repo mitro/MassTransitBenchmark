@@ -10,11 +10,11 @@ namespace Contracts
     {
         public DateTime CreatedAt { get; private set; }
 
-        public int ContextId { get; private set; }
+        public string ContextId { get; private set; }
 
         public RuleNumber Number { get; private set; }
 
-        public ExecuteRule(DateTime createdAt, int contextId, RuleNumber number)
+        public ExecuteRule(DateTime createdAt, string contextId, RuleNumber number)
         {
             CreatedAt = createdAt;
             ContextId = contextId;

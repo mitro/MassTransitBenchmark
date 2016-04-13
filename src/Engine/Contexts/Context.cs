@@ -1,74 +1,45 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection.Emit;
 using System.Threading;
 using Contracts;
 using MassTransit;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Engine.Contexts
 {
     public class Context
     {
-        private static int _currentId;
+        [BsonId]
+        public string Id { get; set; }
 
-        private ContextState _state;
+        public ContextState State { get; set; }
 
-        private Stopwatch _stopwatch;
+        public DateTime StartedAt { get; set; }
 
-        public int Id { get; }
+        public DateTime? FinishedAt { get; set; }
 
-        public IBus Bus { get; }
-
-        public event Action ContextFinished = delegate { };
-
-        public long ProcessingTimeInMs
+        public double ProcessingTimeInMs
         {
             get
             {
-                if (_state != ContextState.SecondRuleExecuted) throw new Exception($"Cannot calculate processing time because context {Id} is still running");
-                return _stopwatch.ElapsedMilliseconds;
+                if (State != ContextState.SecondRuleExecuted)
+                {
+                    throw new Exception($"Cannot calculate processing time because context {Id} is still running. Check your code.");
+                }
+
+                if (!FinishedAt.HasValue)
+                {
+                    throw new Exception($"Context {Id} has finished, but FinishedAt value was not set. Check your code.");
+                }
+
+                return (FinishedAt.Value - StartedAt).TotalMilliseconds;
             }
         }
 
-        public Context(IBus bus)
+        public Context()
         {
-            Id = Interlocked.Increment(ref _currentId);
-            Bus = bus;
-
-            _state = ContextState.Start;
-            _stopwatch = new Stopwatch();
-        }
-
-        public void Start()
-        {
-            _stopwatch.Start();
-
-            var executeFirstRule = new ExecuteRule(DateTime.Now, Id, RuleNumber.First);
-            Bus.Publish(executeFirstRule);
-        }
-
-        public void Process(RuleExecuted rule)
-        {
-            if (_state == ContextState.SecondRuleExecuted) throw new Exception("No rule execution cannot be processed in a SecondRuleExecuted state");
-
-            if (rule.Number == RuleNumber.First)
-            {
-                if (_state != ContextState.Start) throw new Exception("First rule execution can be processed only in a Start state");
-
-                _state = ContextState.FirstRuleExecuted;
-
-                var executeSecondRule = new ExecuteRule(DateTime.Now, Id, RuleNumber.Second);
-                Bus.Publish(executeSecondRule);
-            }
-            else if (rule.Number == RuleNumber.Second)
-            {
-                if (_state != ContextState.FirstRuleExecuted) throw new Exception("Second rule execution can be processed only in a FirstRuleExecuted state");
-
-                _state = ContextState.SecondRuleExecuted;
-
-                _stopwatch.Stop();
-
-                ContextFinished();
-            }
+            Id = Guid.NewGuid().ToString();
         }
     }
 

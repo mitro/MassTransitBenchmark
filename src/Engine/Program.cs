@@ -2,8 +2,6 @@
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using Engine.Consumers;
 using Engine.Contexts;
@@ -17,44 +15,104 @@ namespace Engine
     {
         private static int _contextCount;
 
-        private static Stopwatch _stopwatch = new Stopwatch();
-        private static ContextStore _contextStore;
+        private static readonly Stopwatch _stopwatch = new Stopwatch();
+
+        private static IContextStore _contextStore;
         private static MetricsStore _metricsStore;
+        private static ContextRunner _contextRunner;
+        private static IBusControl _bus;
+        private static BusHandle _busHandle;
 
         static void Main(string[] args)
         {
-            _contextStore = new ContextStore();
+            InitBus();
+
+            InitDependencies();
+
+            Start();
+
+            _busHandle.Stop();
+        }
+
+        private static void InitBus()
+        {
+            var url = ConfigurationManager.AppSettings["RabbitMqUrl"];
+            var username = ConfigurationManager.AppSettings["RabbitMqUsername"];
+            var password = ConfigurationManager.AppSettings["RabbitMqPassword"];
+
+            NLogLogger.Use();
+
+            ushort threadNum = 100;
+
+            _bus = Bus.Factory.CreateUsingRabbitMq(x =>
+            {
+                var host = x.Host(new Uri(url), h =>
+                {
+                    h.Username(username);
+                    h.Password(password);
+                });
+
+                x.ReceiveEndpoint(host, "Benchmark_Engine", e =>
+                {
+                    e.Consumer(() => new RuleExecutedConsumer(_contextStore, _contextRunner));
+
+                    e.PrefetchCount = threadNum;
+                });
+            });
+
+            _busHandle = _bus.Start();
+        }
+
+        private static void InitDependencies()
+        {
+            _contextStore = CreateContextStore();
+
             _metricsStore = new MetricsStore();
+            _contextRunner = new ContextRunner(_bus, _contextStore);
 
-            var bus = InitBus();
-
-            var busHandle = bus.Start();
+            _contextRunner.ContextFinished += _metricsStore.LogContextFinish;
 
             _metricsStore.ExecutionCompleted += () =>
             {
+                _stopwatch.Stop();
+
                 Console.WriteLine($"{_metricsStore.FinishedContexts} contexts finished");
                 Console.WriteLine($"{(_metricsStore.FinishedContexts/_stopwatch.Elapsed.TotalSeconds):0} contexts/sec");
                 Console.WriteLine($"{Process.GetCurrentProcess().Threads.Count} threads used now");
                 Console.WriteLine($"Total processing time {_stopwatch.Elapsed}");
 
-                _stopwatch.Stop();
-                Console.WriteLine($"Min context processing time {_contextStore.All().Min(c => c.ProcessingTimeInMs)} ms");
-                Console.WriteLine($"Average context processing time {_contextStore.All().Average(c => c.ProcessingTimeInMs)} ms");
-                Console.WriteLine($"Median context processing time {_contextStore.All().Select(c => c.ProcessingTimeInMs).Median()} ms");
-                Console.WriteLine($"95 percentile context processing time {_contextStore.All().Select(c => c.ProcessingTimeInMs).Percentile(95)} ms");
-                Console.WriteLine($"Max context processing time {_contextStore.All().Max(c => c.ProcessingTimeInMs)} ms");
+                var processingTimes = _contextStore.All().Select(c => c.ProcessingTimeInMs).ToArray();
+
+                Console.WriteLine($"Min context processing time {processingTimes.Min()} ms");
+                Console.WriteLine($"Average context processing time {processingTimes.Average()} ms");
+                Console.WriteLine(
+                    $"Median context processing time {processingTimes.Median()} ms");
+                Console.WriteLine(
+                    $"95 percentile context processing time {processingTimes.Percentile(95)} ms");
+                Console.WriteLine($"Max context processing time {processingTimes.Max()} ms");
 
                 Console.WriteLine();
-
-                //Start(bus);
             };
-
-            Start(bus);
-
-            busHandle.Stop();
         }
 
-        private static void Start(IBusControl bus)
+        private static IContextStore CreateContextStore()
+        {
+            var contextStoreConfig = ConfigurationManager.AppSettings["ContextStore"];
+
+            if (contextStoreConfig == "Memory")
+            {
+                return new MemoryContextStore();
+            }
+
+            if (contextStoreConfig == "MongoDb")
+            {
+                return new MongoContextStore();
+            }
+
+            throw new ConfigurationErrorsException("Invalid value of the ContextStore app setting");
+        }
+
+        private static void Start()
         {
             Console.Write("Enter number of contexts to start: ");
             _contextCount = int.Parse(Console.ReadLine());
@@ -65,42 +123,10 @@ namespace Engine
 
             Parallel.For(0, _contextCount, (i, s) =>
             {
-                var context = new Context(bus);
-                _contextStore.Add(context);
-                context.ContextFinished += _metricsStore.LogContextFinish;
-                context.Start();
+                _contextRunner.Start(new Context());
             });
 
             Console.ReadLine();
-        }
-
-        private static IBusControl InitBus()
-        {
-            var url = ConfigurationManager.AppSettings["RabbitmqUrl"];
-            var username = ConfigurationManager.AppSettings["Username"];
-            var password = ConfigurationManager.AppSettings["Password"];
-
-            NLogLogger.Use();
-
-            ushort threadNum = 1000;
-
-            var bus = Bus.Factory.CreateUsingRabbitMq(x =>
-            {
-                var host = x.Host(new Uri(url), h =>
-                {
-                    h.Username(username);
-                    h.Password(password);
-                });
-
-                x.ReceiveEndpoint(host, "Benchmark_Engine", e =>
-                {
-                    e.Consumer(() => new RuleExecutedConsumer(_contextStore));
-
-                    e.PrefetchCount = threadNum;
-                });
-            });
-
-            return bus;
         }
     }
 }

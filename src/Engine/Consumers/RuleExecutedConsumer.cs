@@ -9,20 +9,22 @@ namespace Engine.Consumers
 {
     public class RuleExecutedConsumer: IConsumer<RuleExecuted>
     {
-        private readonly ContextStore _contextStore;
+        private readonly IContextStore _contextStore;
+        private readonly ContextRunner _contextRunner;
 
-        public RuleExecutedConsumer(ContextStore contextStore)
+        public RuleExecutedConsumer(IContextStore contextStore, ContextRunner contextRunner)
         {
             _contextStore = contextStore;
+            _contextRunner = contextRunner;
         }
 
         public Task Consume(ConsumeContext<RuleExecuted> context)
         {
             var message = context.Message;
 
-            var ctxId = message.ContextId;
-            var ctx = _contextStore.Get(ctxId);
-            ctx.Process(message);
+            var ctx = _contextStore.Get(message.ContextId);
+
+            _contextRunner.Process(ctx, message);
 
             return Task.FromResult(0);
         }

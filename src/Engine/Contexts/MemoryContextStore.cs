@@ -5,16 +5,16 @@ using System.Linq;
 
 namespace Engine.Contexts
 {
-    public class ContextStore
+    public class MemoryContextStore : IContextStore
     {
-        private readonly ConcurrentDictionary<int, Context> _contexts = new ConcurrentDictionary<int, Context>();
+        private readonly ConcurrentDictionary<string, Context> _contexts = new ConcurrentDictionary<string, Context>();
 
-        public void Add(Context context)
+        public void Insert(Context context)
         {
             if (!_contexts.TryAdd(context.Id, context)) throw new Exception($"Context with id = {context.Id} already exists");
         }
 
-        public Context Get(int contextId)
+        public Context Get(string contextId)
         {
             Context context;
 
@@ -31,6 +31,11 @@ namespace Engine.Contexts
         public void Clear()
         {
             _contexts.Clear();
+        }
+
+        public void Update(Context context)
+        {
+            
         }
     }
 }

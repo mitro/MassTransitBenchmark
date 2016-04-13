@@ -12,7 +12,7 @@ namespace Agent
         {
             var message = context.Message;
 
-            //Console.WriteLine($"Executing rule for contextId={message.ContextId}, step={message.Number}, createdAt={message.CreatedAt}");
+            Console.WriteLine($"Executing rule for contextId={message.ContextId}, step={message.Number}, createdAt={message.CreatedAt}");
 
             if (message.Number == RuleNumber.First)
             {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using Engine.Contexts;
 
 namespace Engine.Metrics
 {
@@ -13,7 +14,7 @@ namespace Engine.Metrics
 
         public int FinishedContexts => _finishedContexts;
 
-        public void LogContextFinish()
+        public void LogContextFinish(Context context)
         {
             Interlocked.Increment(ref _finishedContexts);
 
