@@ -25,13 +25,13 @@ namespace Engine
 
         static void Main(string[] args)
         {
-            InitBus();
-
             InitDependencies();
 
-            Start();
+            InitBus();
 
-            _busHandle.Stop();
+            AskContextCountAndStart();
+
+            StopBus();
         }
 
         private static void InitBus()
@@ -60,6 +60,8 @@ namespace Engine
                 });
             });
 
+            _contextRunner.Bus = _bus;
+
             _busHandle = _bus.Start();
         }
 
@@ -68,7 +70,7 @@ namespace Engine
             _contextStore = CreateContextStore();
 
             _metricsStore = new MetricsStore();
-            _contextRunner = new ContextRunner(_bus, _contextStore);
+            _contextRunner = new ContextRunner(_contextStore);
 
             _contextRunner.ContextFinished += _metricsStore.LogContextFinish;
 
@@ -112,7 +114,7 @@ namespace Engine
             throw new ConfigurationErrorsException("Invalid value of the ContextStore app setting");
         }
 
-        private static void Start()
+        private static void AskContextCountAndStart()
         {
             Console.Write("Enter number of contexts to start: ");
             _contextCount = int.Parse(Console.ReadLine());
@@ -127,6 +129,11 @@ namespace Engine
             });
 
             Console.ReadLine();
+        }
+
+        private static void StopBus()
+        {
+            _busHandle.Stop();
         }
     }
 }

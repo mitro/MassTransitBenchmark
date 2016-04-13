@@ -14,7 +14,7 @@ namespace Engine.Metrics
 
         public int FinishedContexts => _finishedContexts;
 
-        public void LogContextFinish(Context context)
+        public void LogContextFinish(string contextId)
         {
             Interlocked.Increment(ref _finishedContexts);
 

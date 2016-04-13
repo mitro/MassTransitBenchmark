@@ -14,6 +14,18 @@ namespace Engine.Contexts
             if (!_contexts.TryAdd(context.Id, context)) throw new Exception($"Context with id = {context.Id} already exists");
         }
 
+        public void AddExecutedRule(string contextId, Rule rule)
+        {
+            var context = Get(contextId);
+            context.ExecutedRules.Add(rule);
+        }
+
+        public void UpdateFinishedAt(string contextId, DateTime dateTime)
+        {
+            var context = Get(contextId);
+            context.FinishedAt = dateTime;
+        }
+
         public Context Get(string contextId)
         {
             Context context;
@@ -21,6 +33,12 @@ namespace Engine.Contexts
             if (!_contexts.TryGetValue(contextId, out context)) throw new Exception($"Context with id={contextId} does not exist");
 
             return context;
+        }
+
+        public Rule GetLastRuleExecuted(string contextId)
+        {
+            var context = Get(contextId);
+            return context.ExecutedRules.Last();
         }
 
         public IEnumerable<Context> All()

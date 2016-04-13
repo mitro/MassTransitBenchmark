@@ -22,9 +22,7 @@ namespace Engine.Consumers
         {
             var message = context.Message;
 
-            var ctx = _contextStore.Get(message.ContextId);
-
-            _contextRunner.Process(ctx, message);
+            _contextRunner.Process(message.ContextId, message);
 
             return Task.FromResult(0);
         }

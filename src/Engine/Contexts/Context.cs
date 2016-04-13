@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Emit;
 using System.Threading;
 using Contracts;
@@ -13,17 +15,17 @@ namespace Engine.Contexts
         [BsonId]
         public string Id { get; set; }
 
-        public ContextState State { get; set; }
-
         public DateTime StartedAt { get; set; }
 
         public DateTime? FinishedAt { get; set; }
+
+        public IList<Rule> ExecutedRules { get; set; }
 
         public double ProcessingTimeInMs
         {
             get
             {
-                if (State != ContextState.SecondRuleExecuted)
+                if (ExecutedRules.Last() != Rule.SecondExecuted)
                 {
                     throw new Exception($"Cannot calculate processing time because context {Id} is still running. Check your code.");
                 }
@@ -40,15 +42,17 @@ namespace Engine.Contexts
         public Context()
         {
             Id = Guid.NewGuid().ToString();
+
+            ExecutedRules = new List<Rule>();
         }
     }
 
-    public enum ContextState
+    public enum Rule
     {
-        Start,
+        NoExecuted,
 
-        FirstRuleExecuted,
+        FirstExecuted,
 
-        SecondRuleExecuted
+        SecondExecuted
     }
 }

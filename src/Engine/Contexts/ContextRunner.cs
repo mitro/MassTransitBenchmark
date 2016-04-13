@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Contracts;
 using MassTransit;
 
@@ -6,68 +7,61 @@ namespace Engine.Contexts
 {
     public class ContextRunner
     {
-        private readonly IBus _bus;
+        public IBus Bus { get; set; }
 
         private readonly IContextStore _contextStore;
 
-        public event Action<Context> ContextFinished = delegate { };
+        public event Action<string> ContextFinished = delegate { };
 
-        public ContextRunner(IBus bus, IContextStore contextStore)
+        public ContextRunner(IContextStore contextStore)
         {
-            _bus = bus;
             _contextStore = contextStore;
         }
 
         public void Start(Context context)
         {
-            context.State = ContextState.Start;
             context.StartedAt = DateTime.Now;
-
-            var executeFirstRule = new ExecuteRule(context.StartedAt, context.Id, RuleNumber.First);
+            context.ExecutedRules.Add(Rule.NoExecuted);
 
             _contextStore.Insert(context);
 
-            _bus.Publish(executeFirstRule);
+            var executeFirstRule = new ExecuteRule(context.StartedAt, context.Id, RuleNumber.First);
+            Bus.Publish(executeFirstRule);
         }
 
-        public void Process(Context context, RuleExecuted rule)
+        public void Process(string contextId, RuleExecuted rule)
         {
-            var state = context.State;
+            var state = _contextStore.GetLastRuleExecuted(contextId);
 
-            if (state == ContextState.SecondRuleExecuted)
+            if (state == Rule.SecondExecuted)
             {
-                throw new Exception("No rule execution cannot be processed in a SecondRuleExecuted state");
+                throw new Exception("No rule execution can be processed in a SecondExecuted state");
             }
 
             if (rule.Number == RuleNumber.First)
             {
-                if (state != ContextState.Start)
+                if (state != Rule.NoExecuted)
                 {
-                    throw new Exception("First rule execution can be processed only in a Start state");
+                    throw new Exception("First rule execution can be processed only in a NoExecuted state");
                 }
 
-                context.State = ContextState.FirstRuleExecuted;
+                var executeSecondRule = new ExecuteRule(DateTime.Now, contextId, RuleNumber.Second);
 
-                var executeSecondRule = new ExecuteRule(DateTime.Now, context.Id, RuleNumber.Second);
+                _contextStore.AddExecutedRule(contextId, Rule.FirstExecuted);
 
-                _contextStore.Update(context);
-
-                _bus.Publish(executeSecondRule);
+                Bus.Publish(executeSecondRule);
             }
             else if (rule.Number == RuleNumber.Second)
             {
-                if (state != ContextState.FirstRuleExecuted)
+                if (state != Rule.FirstExecuted)
                 {
-                    throw new Exception("Second rule execution can be processed only in a FirstRuleExecuted state");
+                    throw new Exception("Second rule execution can be processed only in a FirstExecuted state");
                 }
 
-                context.State = ContextState.SecondRuleExecuted;
+                _contextStore.AddExecutedRule(contextId, Rule.SecondExecuted);
+                _contextStore.UpdateFinishedAt(contextId, DateTime.Now);
 
-                context.FinishedAt = DateTime.Now;
-
-                _contextStore.Update(context);
-
-                ContextFinished(context);
+                ContextFinished(contextId);
             }
         }
     }
