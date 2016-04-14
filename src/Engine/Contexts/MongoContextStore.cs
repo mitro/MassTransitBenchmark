@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -19,63 +20,59 @@ namespace Engine.Contexts
 
         private void InitConnection()
         {
-            var url = ConfigurationManager.AppSettings["MongoDbUrl"];
+            var host = ConfigurationManager.AppSettings["MongoDbHost"];
             var databaseName = ConfigurationManager.AppSettings["MongoDbDatabase"];
             var collection = ConfigurationManager.AppSettings["MongoDbContextCollection"];
 
-            var client = new MongoClient(new MongoUrl(url));
+            var clientSettings = new MongoClientSettings
+            {
+                Server = new MongoServerAddress(host),
+                WaitQueueSize = 10000,
+                MaxConnectionPoolSize = 10000,
+                
+            };
+            var client = new MongoClient(clientSettings);
             var database = client.GetDatabase(databaseName);
             _contextCollection = database.GetCollection<Context>(collection);
         }
 
-        public void Insert(Context context)
+        public async Task Insert(Context context)
         {
-            _contextCollection.InsertOne(context);
+            await _contextCollection.InsertOneAsync(context);
         }
 
-        public void Update(Context context)
-        {
-            var filter = Builders<Context>.Filter.Eq(c => c.Id, context.Id);
-            _contextCollection.ReplaceOne(filter, context);
-        }
-
-        public void AddExecutedRule(string contextId, Rule rule)
+        public async Task AddExecutedRule(string contextId, Rule rule)
         {
             var filter = Builders<Context>.Filter.Eq(c => c.Id, contextId);
             var push = Builders<Context>.Update.Push(c => c.ExecutedRules, rule);
 
-            _contextCollection.UpdateOne(filter, push);
+            await _contextCollection.UpdateOneAsync(filter, push);
         }
 
-        public void UpdateFinishedAt(string contextId, DateTime dateTime)
+        public async Task UpdateFinishedAt(string contextId, DateTime dateTime)
         {
             var filter = Builders<Context>.Filter.Eq(c => c.Id, contextId);
             var set = Builders<Context>.Update.Set(c => c.FinishedAt, dateTime);
 
-            _contextCollection.UpdateOne(filter, set);
+            await _contextCollection.UpdateOneAsync(filter, set);
         }
 
-        public Context Get(string contextId)
+        public async Task<Rule> GetLastRuleExecuted(string contextId)
         {
-            return _contextCollection.Find(c => c.Id == contextId).Single();
-        }
-
-        public Rule GetLastRuleExecuted(string contextId)
-        {
-            return _contextCollection
+            return await _contextCollection
                 .Find(c => c.Id == contextId)
                 .Project(c => c.ExecutedRules.Last())
-                .Single();
+                .SingleAsync();
         }
 
-        public IEnumerable<Context> All()
+        public async Task<IEnumerable<Context>> All()
         {
-            return IAsyncCursorSourceExtensions.ToList(_contextCollection.AsQueryable());
+            return await _contextCollection.AsQueryable().ToListAsync();
         }
 
-        public void Clear()
+        public async Task Clear()
         {
-            _contextCollection.DeleteMany(FilterDefinition<Context>.Empty);
+            await _contextCollection.DeleteManyAsync(c => true);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Contracts;
 using MassTransit;
 
@@ -18,20 +19,20 @@ namespace Engine.Contexts
             _contextStore = contextStore;
         }
 
-        public void Start(Context context)
+        public async Task Start(Context context)
         {
             context.StartedAt = DateTime.Now;
             context.ExecutedRules.Add(Rule.NoExecuted);
 
-            _contextStore.Insert(context);
+            await _contextStore.Insert(context);
 
             var executeFirstRule = new ExecuteRule(context.StartedAt, context.Id, RuleNumber.First);
-            Bus.Publish(executeFirstRule);
+            await Bus.Publish(executeFirstRule);
         }
 
-        public void Process(string contextId, RuleExecuted rule)
+        public async Task Process(string contextId, RuleExecuted rule)
         {
-            var state = _contextStore.GetLastRuleExecuted(contextId);
+            var state = await _contextStore.GetLastRuleExecuted(contextId);
 
             if (state == Rule.SecondExecuted)
             {
@@ -47,9 +48,9 @@ namespace Engine.Contexts
 
                 var executeSecondRule = new ExecuteRule(DateTime.Now, contextId, RuleNumber.Second);
 
-                _contextStore.AddExecutedRule(contextId, Rule.FirstExecuted);
+                await _contextStore.AddExecutedRule(contextId, Rule.FirstExecuted);
 
-                Bus.Publish(executeSecondRule);
+                await Bus.Publish(executeSecondRule);
             }
             else if (rule.Number == RuleNumber.Second)
             {
@@ -58,8 +59,8 @@ namespace Engine.Contexts
                     throw new Exception("Second rule execution can be processed only in a FirstExecuted state");
                 }
 
-                _contextStore.AddExecutedRule(contextId, Rule.SecondExecuted);
-                _contextStore.UpdateFinishedAt(contextId, DateTime.Now);
+                await _contextStore.AddExecutedRule(contextId, Rule.SecondExecuted);
+                await _contextStore.UpdateFinishedAt(contextId, DateTime.Now);
 
                 ContextFinished(contextId);
             }

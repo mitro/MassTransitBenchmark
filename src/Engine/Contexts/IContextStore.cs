@@ -1,17 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Engine.Contexts
 {
     public interface IContextStore
     {
-        void Insert(Context context);
-        void Update(Context context);
-        void AddExecutedRule(string contextId, Rule rule);
-        void UpdateFinishedAt(string contextId, DateTime dateTime);
-        Context Get(string contextId);
-        Rule GetLastRuleExecuted(string contextId);
-        IEnumerable<Context> All();
-        void Clear();
+        Task Insert(Context context);
+        Task AddExecutedRule(string contextId, Rule rule);
+        Task UpdateFinishedAt(string contextId, DateTime dateTime);
+        Task<Rule> GetLastRuleExecuted(string contextId);
+        Task<IEnumerable<Context>> All();
+        Task Clear();
     }
 }

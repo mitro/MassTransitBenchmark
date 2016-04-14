@@ -18,13 +18,11 @@ namespace Engine.Consumers
             _contextRunner = contextRunner;
         }
 
-        public Task Consume(ConsumeContext<RuleExecuted> context)
+        public async Task Consume(ConsumeContext<RuleExecuted> context)
         {
             var message = context.Message;
 
-            _contextRunner.Process(message.ContextId, message);
-
-            return Task.FromResult(0);
+            await _contextRunner.Process(message.ContextId, message);
         }
     }
 }

@@ -29,9 +29,9 @@ namespace Engine
 
             InitBus();
 
-            AskContextCountAndStart();
+            AskContextCountAndStart().Wait();
 
-            StopBus();
+            StopBus().Wait();
         }
 
         private static void InitBus()
@@ -83,7 +83,7 @@ namespace Engine
                 Console.WriteLine($"{Process.GetCurrentProcess().Threads.Count} threads used now");
                 Console.WriteLine($"Total processing time {_stopwatch.Elapsed}");
 
-                var processingTimes = _contextStore.All().Select(c => c.ProcessingTimeInMs).ToArray();
+                var processingTimes = _contextStore.All().Result.Select(c => c.ProcessingTimeInMs).ToArray();
 
                 Console.WriteLine($"Min context processing time {processingTimes.Min()} ms");
                 Console.WriteLine($"Average context processing time {processingTimes.Average()} ms");
@@ -114,26 +114,28 @@ namespace Engine
             throw new ConfigurationErrorsException("Invalid value of the ContextStore app setting");
         }
 
-        private static void AskContextCountAndStart()
+        private async static Task AskContextCountAndStart()
         {
             Console.Write("Enter number of contexts to start: ");
             _contextCount = int.Parse(Console.ReadLine());
 
-            _contextStore.Clear();
-            _metricsStore.Reset(_contextCount);
+            _metricsStore.ContextCount = _contextCount;
+
             _stopwatch.Restart();
 
-            Parallel.For(0, _contextCount, (i, s) =>
+            await _contextStore.Clear();
+
+            Parallel.For(0, _contextCount, async (i, s) =>
             {
-                _contextRunner.Start(new Context());
+                await _contextRunner.Start(new Context());
             });
 
             Console.ReadLine();
         }
 
-        private static void StopBus()
+        private async static Task StopBus()
         {
-            _busHandle.Stop();
+            await _busHandle.StopAsync();
         }
     }
 }
