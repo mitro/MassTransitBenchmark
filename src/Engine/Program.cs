@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Engine.Consumers;
 using Engine.Contexts;
@@ -125,10 +126,10 @@ namespace Engine
 
             await _contextStore.Clear();
 
-            Parallel.For(0, _contextCount, async (i, s) =>
+            for (int i = 0; i < _contextCount; i++)
             {
                 await _contextRunner.Start(new Context());
-            });
+            }
 
             Console.ReadLine();
         }

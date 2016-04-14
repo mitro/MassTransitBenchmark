@@ -28,8 +28,13 @@ namespace Engine.Contexts
             {
                 Server = new MongoServerAddress(host),
                 WaitQueueSize = 10000,
-                MaxConnectionPoolSize = 10000,
-                
+                MaxConnectionPoolSize = 1000,
+                ConnectTimeout = new TimeSpan(0, 2, 0),
+                SocketTimeout = new TimeSpan(0, 2, 0),
+                WaitQueueTimeout = new TimeSpan(0, 2, 0),
+                MaxConnectionIdleTime = new TimeSpan(0, 2, 0),
+                MaxConnectionLifeTime = new TimeSpan(0, 2, 0),
+                ServerSelectionTimeout = new TimeSpan(0, 2, 0)
             };
             var client = new MongoClient(clientSettings);
             var database = client.GetDatabase(databaseName);
